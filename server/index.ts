@@ -1,6 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initializeDatabase } from "./db";
+import { PgStorage } from "./pg-storage";
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +40,20 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize the database
+  try {
+    await initializeDatabase();
+    log("Database initialized successfully", "database");
+    
+    // If using PgStorage, seed initial data
+    if (storage instanceof PgStorage) {
+      await (storage as PgStorage).seedInitialExpenses();
+      log("Initial expenses seeded successfully", "database");
+    }
+  } catch (error) {
+    console.error("Failed to initialize database:", error);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
