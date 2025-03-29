@@ -168,7 +168,11 @@ export default function Settings() {
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Export Data</h3>
                 <p className="text-sm text-gray-500">Download all your expense data</p>
-                <Button variant="outline" className="mt-2">
+                <Button 
+                  variant="outline" 
+                  className="mt-2"
+                  onClick={() => window.location.href = '/api/expenses/export'}
+                >
                   Export as CSV
                 </Button>
               </div>
