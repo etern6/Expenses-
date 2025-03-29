@@ -209,6 +209,42 @@ export default function Settings() {
                 </Button>
               </div>
               
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Export Code</h3>
+                <p className="text-sm text-gray-500">Download all application code as a CSV file</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-2"
+                  onClick={() => {
+                    fetch('/api/code/export')
+                      .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.blob();
+                      })
+                      .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'application_code.csv';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                      })
+                      .catch(error => {
+                        console.error('Error downloading file:', error);
+                        toast({
+                          title: "Download failed",
+                          description: "There was an error exporting the code.",
+                          variant: "destructive",
+                        });
+                      });
+                  }}
+                >
+                  Export Code as CSV
+                </Button>
+              </div>
+              
               <div className="space-y-2 pt-4 border-t border-gray-200">
                 <h3 className="text-sm font-medium text-red-600">Danger Zone</h3>
                 <p className="text-sm text-gray-500">Permanently delete all your data</p>

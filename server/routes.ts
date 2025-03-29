@@ -223,6 +223,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export all code as CSV (for development purposes)
+  apiRouter.get("/code/export", async (_req: Request, res: Response) => {
+    try {
+      const { execSync } = require('child_process');
+      
+      // Generate code CSV if it doesn't exist or needs to be refreshed
+      execSync('mkdir -p /tmp/code_csv && echo "file_path,content" > /tmp/code_csv/code.csv && find . -type f -name "*.ts" -o -name "*.tsx" | grep -v "node_modules" | while read file; do echo "\\"$file\\",\\"$(cat "$file" | tr -d \'\\r\' | sed \'s/"/"""/g\' | tr \'\\n\' \'☯\' | sed \'s/☯/\\\\n/g\')\\"" >> /tmp/code_csv/code.csv; done');
+      
+      // Read the generated CSV file
+      const fs = require('fs');
+      const csvContent = fs.readFileSync('/tmp/code_csv/code.csv', 'utf8');
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=application_code.csv');
+      
+      res.send(csvContent);
+    } catch (error) {
+      console.error("Error exporting code as CSV:", error);
+      res.status(500).json({ message: "Failed to export code as CSV" });
+    }
+  });
+
   // Mount the API router
   app.use("/api", apiRouter);
   
