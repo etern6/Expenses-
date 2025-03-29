@@ -36,6 +36,7 @@ export default function Expenses() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Expenses</h1>
           <p className="mt-1 text-sm text-gray-500">Manage and track all your expenses</p>
+          <a href="/api/expenses/export" className="text-sm text-primary-500 hover:text-primary-600">Download as CSV</a>
         </div>
 
         <div className="flex items-center gap-4">
