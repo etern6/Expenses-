@@ -96,13 +96,13 @@ export class PgStorage implements IStorage {
 
     // Calculate total expenses
     const totalResult = await db
-      .select({ total: sql<number>`sum(${expenses.amount})` })
+      .select({ total: sql<number>`sum(${expenses.amount}) as total` })
       .from(expenses);
     const totalExpenses = totalResult[0]?.total || 0;
 
     // Calculate this month's expenses
     const thisMonthResult = await db
-      .select({ total: sql<number>`sum(${expenses.amount})` })
+      .select({ total: sql<number>`sum(${expenses.amount}) as total` })
       .from(expenses)
       .where(
         and(
@@ -114,7 +114,7 @@ export class PgStorage implements IStorage {
 
     // Calculate last month's expenses
     const lastMonthResult = await db
-      .select({ total: sql<number>`sum(${expenses.amount})` })
+      .select({ total: sql<number>`sum(${expenses.amount}) as total` })
       .from(expenses)
       .where(
         and(
@@ -133,11 +133,11 @@ export class PgStorage implements IStorage {
     const categoryResults = await db
       .select({
         category: expenses.category,
-        total: sql<number>`sum(${expenses.amount})`
+        total: sql<number>`sum(${expenses.amount}) as total`
       })
       .from(expenses)
       .groupBy(expenses.category)
-      .orderBy(sql`total desc`)
+      .orderBy(sql`sum(${expenses.amount}) desc`)
       .limit(1);
 
     const topCategory = categoryResults.length > 0
@@ -168,7 +168,7 @@ export class PgStorage implements IStorage {
     const results = await db
       .select({
         category: expenses.category,
-        total: sql<number>`sum(${expenses.amount})`
+        total: sql<number>`sum(${expenses.amount}) as total`
       })
       .from(expenses)
       .groupBy(expenses.category);
@@ -192,8 +192,8 @@ export class PgStorage implements IStorage {
     // Extract month from date and group by month
     const results = await db
       .select({
-        month: sql<string>`to_char(${expenses.date}, 'Mon')`,
-        total: sql<number>`sum(${expenses.amount})`
+        month: sql<string>`to_char(${expenses.date}, 'Mon') as month`,
+        total: sql<number>`sum(${expenses.amount}) as total`
       })
       .from(expenses)
       .where(sql`extract(year from ${expenses.date}) = ${year}`)
@@ -209,38 +209,29 @@ export class PgStorage implements IStorage {
 
   // Filter methods
   async filterExpenses(dateFrom?: Date, dateTo?: Date, category?: string): Promise<Expense[]> {
-    let query = db.select().from(expenses);
+    let queryBuilder = db.select().from(expenses);
+    let conditions = [];
     
-    // Apply date and category filters if provided
-    let hasConditions = false;
+    // Build conditions array
+    if (dateFrom) {
+      conditions.push(gte(expenses.date, dateFrom));
+    }
     
-    if (dateFrom && dateTo) {
-      query = query.where(
-        and(
-          gte(expenses.date, dateFrom),
-          lte(expenses.date, dateTo)
-        )
-      );
-      hasConditions = true;
-    } else if (dateFrom) {
-      query = query.where(gte(expenses.date, dateFrom));
-      hasConditions = true;
-    } else if (dateTo) {
-      query = query.where(lte(expenses.date, dateTo));
-      hasConditions = true;
+    if (dateTo) {
+      conditions.push(lte(expenses.date, dateTo));
     }
     
     if (category && category !== 'all') {
-      if (hasConditions) {
-        // Add category filter to existing conditions
-        query = query.where(sql`${expenses.category} = ${category}`);
-      } else {
-        // Only category filter
-        query = query.where(sql`${expenses.category} = ${category}`);
-      }
+      conditions.push(eq(expenses.category, category));
     }
     
-    return await query.orderBy(desc(expenses.date));
+    // Apply all conditions at once if they exist
+    if (conditions.length > 0) {
+      queryBuilder = queryBuilder.where(and(...conditions));
+    }
+    
+    // Execute query with ordering
+    return await queryBuilder.orderBy(desc(expenses.date));
   }
 
   // Helper method to seed initial data if needed
