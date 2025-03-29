@@ -171,7 +171,31 @@ export default function Settings() {
                 <Button 
                   variant="outline" 
                   className="mt-2"
-                  onClick={() => window.location.href = '/api/expenses/export'}
+                  onClick={() => {
+                    fetch('/api/expenses/export')
+                      .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.blob();
+                      })
+                      .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'expenses.csv';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                      })
+                      .catch(error => {
+                        console.error('Error downloading file:', error);
+                        toast({
+                          title: "Download failed",
+                          description: "There was an error exporting your expenses.",
+                          variant: "destructive",
+                        });
+                      });
+                  }}
                 >
                   Export as CSV
                 </Button>

@@ -20,6 +20,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Export expenses as CSV
+  apiRouter.get("/expenses/export", async (_req: Request, res: Response) => {
+    try {
+      const expenses = await storage.getAllExpenses();
+      
+      // Convert expenses to CSV format
+      const csvHeader = "Date,Description,Amount,Category,Notes\n";
+      const csvRows = expenses.map(expense => {
+        const date = format(new Date(expense.date), 'yyyy-MM-dd');
+        return `${date},"${expense.description}",${expense.amount},"${expense.category}","${expense.notes || ''}"`;
+      }).join('\n');
+      
+      const csv = csvHeader + csvRows;
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=expenses.csv');
+      
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting expenses:", error);
+      res.status(500).json({ message: "Failed to export expenses" });
+    }
+  });
+  
   // Get expense by ID
   apiRouter.get("/expenses/:id", async (req: Request, res: Response) => {
     try {
@@ -195,31 +220,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting expenses by month:", error);
       res.status(500).json({ message: "Failed to get expenses by month" });
-    }
-  });
-  
-  // Export expenses as CSV
-  apiRouter.get("/expenses/export", async (_req: Request, res: Response) => {
-    try {
-      const expenses = await storage.getAllExpenses();
-      
-      // Convert expenses to CSV format
-      const csvHeader = "Date,Description,Amount,Category,Notes\n";
-      const csvRows = expenses.map(expense => {
-        const date = format(new Date(expense.date), 'yyyy-MM-dd');
-        return `${date},"${expense.description}",${expense.amount},"${expense.category}","${expense.notes || ''}"`;
-      }).join('\n');
-      
-      const csv = csvHeader + csvRows;
-      
-      // Set headers for file download
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename=expenses.csv');
-      
-      res.send(csv);
-    } catch (error) {
-      console.error("Error exporting expenses:", error);
-      res.status(500).json({ message: "Failed to export expenses" });
     }
   });
 
