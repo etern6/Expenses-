@@ -92,8 +92,8 @@ function NavItems({ isActive, onClick }: NavItemsProps) {
           </a>
         </Link>
         <Link href="/settings">
-          <a
-            className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+          <div
+            className={`flex items-center px-4 py-2 text-sm font-medium rounded-md cursor-pointer ${
               isActive("/settings")
                 ? "text-primary-500 bg-primary-50"
                 : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -104,7 +104,7 @@ function NavItems({ isActive, onClick }: NavItemsProps) {
               settings
             </span>
             Settings
-          </a>
+          </div>
         </Link>
       </nav>
     </div>
